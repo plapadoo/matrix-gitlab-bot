@@ -13,7 +13,7 @@ import Data.Aeson (decode)
 import Data.Bool (Bool(True))
 import Data.ByteString.Lazy (toStrict)
 import Data.Either (Either(..))
-import Data.Foldable (and)
+import Data.Foldable (and,null)
 import Data.Function (($))
 import Data.Functor (Functor, (<$>))
 import Data.Maybe (Maybe(..))
@@ -54,37 +54,40 @@ main :: IO ()
 main = do
   options <- readProgramOptions
   configOptions <- readConfigOptions (options ^. poConfigFile)
-  rm' <- readRepoMapping (configOptions ^. coRepoMapping)
   let defLog = defaultLog (configOptions ^. coLogFile)
-  case rm' of
-    Left e ->
-      defaultLog (configOptions ^. coLogFile) $
-      "error reading repo mapping: " <> (pack e)
-    Right rm ->
-      scotty (configOptions ^. coListenPort) $
-      post "/" $ do
-        content <- body
-        defLog ("Got JSON data: " <> (decodeUtf8 (toStrict content)))
-        case decode content of
-          Nothing -> defLog "couldn't parse json"
-          Just decodedJson ->
-            case repositoryName <$> eventRepository decodedJson of
-              Nothing -> defLog "No repository found in JSON"
-              Just repo -> do
-                let incomingMessage = convertGitlabEvent decodedJson
-                    sendToRoom room =
-                      sendMessage
-                        (configOptions ^. coBotUrl)
-                        room
-                        incomingMessage
-                result <-
-                  liftIO
-                    (runReaderT
-                       (runMyMonad
-                          (mapM
-                             (\(Room r) -> sendToRoom r)
-                             (roomsForRepo rm (Repo repo))))
-                       configOptions)
-                if and result
-                  then status ok200
-                  else status internalServerError500
+  scotty (configOptions ^. coListenPort) $
+    post "/" $ do
+      rm' <- readRepoMapping (configOptions ^. coRepoMapping)
+      case rm' of
+        Left e ->
+          defaultLog (configOptions ^. coLogFile) $ "error reading repo mapping: " <> (pack e)
+        Right rm -> do
+          content <- body
+          defLog ("Got JSON data: " <> (decodeUtf8 (toStrict content)))
+          case decode content of
+            Nothing -> defLog "couldn't parse json"
+            Just decodedJson ->
+              case repositoryName <$> eventRepository decodedJson of
+                Nothing -> defLog "No repository found in JSON"
+                Just repo -> do
+                  let incomingMessage = convertGitlabEvent decodedJson
+                      sendToRoom room =
+                        sendMessage
+                          (configOptions ^. coBotUrl)
+                          room
+                          incomingMessage
+                      rooms = roomsForRepo rm (Repo repo)
+                  if null rooms
+                    then defLog "No rooms to send"
+                    else defLog $ "Sending to the following rooms: " <> textShow rooms
+                  result <-
+                    liftIO
+                      (runReaderT
+                        (runMyMonad
+                            (mapM
+                              (\(Room r) -> sendToRoom r)
+                              rooms))
+                        configOptions)
+                  if and result
+                    then status ok200
+                    else status internalServerError500
