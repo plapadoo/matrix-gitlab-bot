@@ -15,11 +15,11 @@ extra-source-files:  README.md
 
 library
   hs-source-dirs:      src
-  exposed-modules:     GMB.Gitlab.ProgramOptions
-                     , GMB.Gitlab.ConfigOptions
-                     , GMB.Gitlab.Conversion
-                     , GMB.Gitlab.RepoMapping
-                     , GMB.Gitlab.API
+  exposed-modules:     Web.Matrix.Gitlab.ProgramOptions
+                     , Web.Matrix.Gitlab.ConfigOptions
+                     , Web.Matrix.Gitlab.Conversion
+                     , Web.Matrix.Gitlab.RepoMapping
+                     , Web.Matrix.Gitlab.API
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , lens

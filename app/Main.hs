@@ -20,15 +20,15 @@ import Data.Maybe (Maybe(..))
 import Data.Monoid ((<>))
 import Data.Text (pack)
 import Data.Text.Encoding (decodeUtf8)
-import GMB.API (sendMessage)
-import GMB.Gitlab.API
+import Web.Matrix.Bot.API (sendMessage)
+import Web.Matrix.Gitlab.API
        (GitlabEvent, eventRepository, repositoryName)
-import GMB.Gitlab.ConfigOptions
+import Web.Matrix.Gitlab.ConfigOptions
        (ConfigOptions, readConfigOptions, coListenPort, coBotUrl,
         coLogFile, coRepoMapping)
-import GMB.Gitlab.Conversion (convertGitlabEvent)
-import GMB.Gitlab.ProgramOptions (readProgramOptions, poConfigFile)
-import GMB.Gitlab.RepoMapping
+import Web.Matrix.Gitlab.Conversion (convertGitlabEvent)
+import Web.Matrix.Gitlab.ProgramOptions (readProgramOptions, poConfigFile)
+import Web.Matrix.Gitlab.RepoMapping
        (readRepoMapping, Repo(..), roomsForRepo, Room(..))
 import Network.HTTP.Types.Status (internalServerError500, ok200)
 import Plpd.Http (MonadHttp(..), loggingHttp)

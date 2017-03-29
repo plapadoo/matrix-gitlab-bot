@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module GMB.Gitlab.Conversion
+module Web.Matrix.Gitlab.Conversion
   ( convertGitlabEvent
   ) where
 
@@ -11,12 +11,12 @@ import Data.Maybe (Maybe(..), fromJust, maybe)
 import Data.Monoid ((<>))
 import qualified Data.Text as Text
 import Data.Text.Format (format)
-import GMB.Gitlab.API
+import Web.Matrix.Gitlab.API
        (GitlabEvent, eventObjectKind, eventCommits, eventUserName,
         eventUserUserName, objectNote, objectUrl, objectTitle, objectState,
         eventObjectAttributes, eventRepository, commitMessage,
         repositoryName)
-import GMB.IncomingMessage
+import Web.Matrix.Bot.IncomingMessage
        (IncomingMessage, constructIncomingMessageLazy,
         constructIncomingMessage)
 import Plpd.Util (textShow, surroundQuotes, surroundHtml)

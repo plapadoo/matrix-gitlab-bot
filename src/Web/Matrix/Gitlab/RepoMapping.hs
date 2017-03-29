@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module GMB.Gitlab.RepoMapping
+module Web.Matrix.Gitlab.RepoMapping
   ( RepoMapping
   , readRepoMapping
   , roomsForRepo

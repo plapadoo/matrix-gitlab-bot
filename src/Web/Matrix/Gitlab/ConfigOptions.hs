@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module GMB.Gitlab.ConfigOptions
+module Web.Matrix.Gitlab.ConfigOptions
   ( ConfigOptions(..)
   , readConfigOptions
   , coLogFile

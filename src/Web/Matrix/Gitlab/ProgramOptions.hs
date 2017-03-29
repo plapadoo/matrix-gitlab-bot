@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-module GMB.Gitlab.ProgramOptions
+module Web.Matrix.Gitlab.ProgramOptions
   (ProgramOptions(..)
   ,readProgramOptions
   ,poConfigFile)
