@@ -22,7 +22,7 @@ import Web.Matrix.Bot.IncomingMessage
 import Plpd.Util (textShow, surroundQuotes, surroundHtml)
 import Prelude ()
 
-convertGitlabEvent :: GitlabEvent -> IncomingMessage
+convertGitlabEvent :: GitlabEvent -> (IncomingMessage Text.Text Text.Text)
 convertGitlabEvent event =
   case eventObjectKind event of
     "push" ->
