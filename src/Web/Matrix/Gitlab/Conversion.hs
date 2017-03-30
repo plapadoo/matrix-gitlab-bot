@@ -42,7 +42,7 @@ convertGitlabEvent event =
                eventCommits event)
           messagePlain = formatStrict "{} pushed {} commit(s) to {}: {}" (userName, commitCount, repositoryName repo, commitsPlain)
           messageHtml =
-            (strong_ (toHtml userName)) <> " pushed " <> (toHtml (textShow commitCount)) <> " commit(s) to " <> (strong_ . toHtml . repositoryName $ repo) <> ": " <> commitsHtml
+            (strong_ (toHtml userName)) <> " pushed " <> (toHtml commitCount) <> " commit(s) to " <> (strong_ . toHtml . repositoryName $ repo) <> ": " <> commitsHtml
       in constructIncomingMessage messagePlain (Just messageHtml)
     "issue" ->
       let repo = fromJust (eventRepository event)
