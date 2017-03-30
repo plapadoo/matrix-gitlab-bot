@@ -12,8 +12,10 @@ module Web.Matrix.Gitlab.API
   , eventUserName
   , eventUserUserName
   , repositoryName
-  , commitMessage
   , eventObjectAttributes
+  , GitlabCommit
+  , commitMessage
+  , commitUrl
   ) where
 
 import Data.Aeson (FromJSON)
@@ -23,24 +25,19 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import Prelude ()
 import Text.Show (Show)
+import Web.Matrix.Gitlab.Internal.Commit
+       (GitlabCommit, commitMessage, commitUrl)
 
 data GitlabRepository = GitlabRepository
   { name :: Text
   } deriving (Generic, Show)
-
-data GitlabCommit = GitlabCommit
-  { message :: Text
-  } deriving (Generic, Show)
-
-commitMessage :: GitlabCommit -> Text
-commitMessage = message
 
 data GitlabObjectAttributes = GitlabObjectAttributes
   { title :: Maybe Text
   , url :: Text
   , note :: Maybe Text
   , state :: Maybe Text
-  } deriving (Generic,Show)
+  } deriving (Generic, Show)
 
 objectTitle :: GitlabObjectAttributes -> Maybe Text
 objectTitle = title
@@ -56,7 +53,7 @@ objectUrl = url
 
 data GitlabUser = GitlabUser
   { username :: Text
-  } deriving (Generic,Show)
+  } deriving (Generic, Show)
 
 data GitlabEvent = GitlabEvent
   { object_kind :: Text
@@ -65,7 +62,7 @@ data GitlabEvent = GitlabEvent
   , repository :: Maybe GitlabRepository
   , commits :: Maybe [GitlabCommit]
   , object_attributes :: Maybe GitlabObjectAttributes
-  } deriving (Generic,Show)
+  } deriving (Generic, Show)
 
 eventObjectAttributes :: GitlabEvent -> Maybe GitlabObjectAttributes
 eventObjectAttributes = object_attributes
@@ -87,8 +84,6 @@ eventUserUserName event = username <$> user event
 
 repositoryName :: GitlabRepository -> Text
 repositoryName = name
-
-instance FromJSON GitlabCommit
 
 instance FromJSON GitlabRepository
 

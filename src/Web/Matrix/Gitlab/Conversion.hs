@@ -13,9 +13,9 @@ import Control.Monad(mapM_)
 import qualified Data.Text as Text
 import Data.Text.Format (format)
 import Web.Matrix.Gitlab.API
-       (GitlabEvent, eventObjectKind, eventCommits, eventUserName,
+       (GitlabEvent,GitlabCommit, eventObjectKind, eventCommits, eventUserName,
         eventUserUserName, objectNote, objectUrl, objectTitle, objectState,
-        eventObjectAttributes, eventRepository, commitMessage,
+        eventObjectAttributes, eventRepository, commitMessage,commitUrl,
         repositoryName)
 import Web.Matrix.Bot.IncomingMessage
        (IncomingMessage, constructIncomingMessageLazy,
@@ -31,8 +31,10 @@ convertGitlabEvent event =
       let repo = fromJust (eventRepository event)
           commitCount = maybe "0" textShow (length <$> (eventCommits event))
           userName = fold (eventUserName event)
+          commitHtml :: GitlabCommit -> Html ()
+          commitHtml commit = li_ (a_ [href_ (commitUrl commit)] (toHtml . surroundQuotes . Text.strip . commitMessage $ commit))
           commitsHtml =
-            maybe mempty (\commits -> ol_ (mapM_ (li_ . toHtml . surroundQuotes . Text.strip . commitMessage) commits)) (eventCommits event)
+            maybe mempty (\commits -> ol_ (mapM_ commitHtml commits)) (eventCommits event)
           commitsPlain =
             fold
               ((Text.intercalate ", " .

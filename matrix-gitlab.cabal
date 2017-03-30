@@ -20,6 +20,7 @@ library
                      , Web.Matrix.Gitlab.Conversion
                      , Web.Matrix.Gitlab.RepoMapping
                      , Web.Matrix.Gitlab.API
+  other-modules:       Web.Matrix.Gitlab.Internal.Commit
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , lens
