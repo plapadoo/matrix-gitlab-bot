@@ -40,9 +40,7 @@ case_conversionForPushEvent = do
       assertBool "author is preserved in plain" ("John Smith" `isInfixOf` (event ^. plainBody ))
       case event ^. markupBody of
         Nothing -> assertFailure "no markup"
-        _ -> return ()
-        -- FIXME
-        -- Just markup -> assertBool "author is preserved in markup" ("John Smith" `isInfixOf` markup)
+        Just markup -> assertBool "author is preserved in markup" ("John Smith" `isInfixOf` (textShow markup ))
 
 case_conversionForIssueEvent = do
   gitlabEvent <- ( convertGitlabEvent <$> ) <$> decode <$> readFile "test/data/issue.json"
@@ -53,9 +51,7 @@ case_conversionForIssueEvent = do
       assertBool "author is preserved in plain" ("Plato" `isInfixOf` (event ^. plainBody ))
       case event ^. markupBody of
         Nothing -> assertFailure "no markup"
-        -- FIXME
-        _ -> return ()
-        --Just markup -> assertBool "author is preserved in markup" ("Plato" `isInfixOf` markup)
+        Just markup -> assertBool "author is preserved in markup" ("Plato" `isInfixOf` (textShow markup ))
 
 case_conversionForCommentEvent = do
   gitlabEvent <- ( convertGitlabEvent <$> ) <$> decode <$> readFile "test/data/comment.json"
@@ -67,9 +63,7 @@ case_conversionForCommentEvent = do
       assertBool "commented is contained plain" ("commented" `isInfixOf` (event ^. plainBody ))
       case event ^. markupBody of
         Nothing -> assertFailure "no markup"
-        _ -> return ()
-        -- FIXME
-        -- Just markup -> assertBool "commented is preserved in markup" ("commented" `isInfixOf` markup)
+        Just markup -> assertBool "commented is preserved in markup" ("commented" `isInfixOf` (textShow markup))
 
 main :: IO ()
 main = $(defaultMainGenerator)

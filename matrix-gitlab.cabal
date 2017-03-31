@@ -21,6 +21,7 @@ library
                      , Web.Matrix.Gitlab.RepoMapping
                      , Web.Matrix.Gitlab.API
   other-modules:       Web.Matrix.Gitlab.Internal.Commit
+                     , Web.Matrix.Gitlab.Internal.Issue
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , lens

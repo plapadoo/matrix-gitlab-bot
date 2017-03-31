@@ -10,6 +10,9 @@ module Web.Matrix.Gitlab.API
   , objectUrl
   , objectNote
   , eventUserName
+  , issueTitle
+  , GitlabIssue
+  , eventIssue
   , eventUserUserName
   , repositoryName
   , eventObjectAttributes
@@ -27,6 +30,7 @@ import Prelude ()
 import Text.Show (Show)
 import Web.Matrix.Gitlab.Internal.Commit
        (GitlabCommit, commitMessage, commitUrl)
+import Web.Matrix.Gitlab.Internal.Issue (GitlabIssue, issueTitle)
 
 data GitlabRepository = GitlabRepository
   { name :: Text
@@ -62,6 +66,7 @@ data GitlabEvent = GitlabEvent
   , repository :: Maybe GitlabRepository
   , commits :: Maybe [GitlabCommit]
   , object_attributes :: Maybe GitlabObjectAttributes
+  , issue :: Maybe GitlabIssue
   } deriving (Generic, Show)
 
 eventObjectAttributes :: GitlabEvent -> Maybe GitlabObjectAttributes
@@ -69,6 +74,9 @@ eventObjectAttributes = object_attributes
 
 eventObjectKind :: GitlabEvent -> Text
 eventObjectKind = object_kind
+
+eventIssue :: GitlabEvent -> Maybe GitlabIssue
+eventIssue = issue
 
 eventCommits :: GitlabEvent -> Maybe [GitlabCommit]
 eventCommits = commits
