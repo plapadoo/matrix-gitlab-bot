@@ -59,7 +59,7 @@ convertGitlabEvent event =
           issueLink =
             a_ [href_ (objectUrl attributes)] (toHtml . surroundQuotes . fromJust . objectTitle $ attributes)
           messageHtml =
-            strong_ (toHtml userName) <> toHtml state <> issueLink <> strong_ (toHtml (repositoryName repo))
+            strong_ (toHtml userName) <> " " <> toHtml state <> " " <> issueLink <> " to " <> strong_ (toHtml (repositoryName repo))
       in constructIncomingMessage messagePlain (Just messageHtml)
     "note" ->
       let repo = fromJust (eventRepository event)
