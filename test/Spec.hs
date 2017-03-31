@@ -45,13 +45,26 @@ case_conversionForPushEvent = do
 case_conversionForIssueEvent = do
   gitlabEvent <- ( convertGitlabEvent <$> ) <$> decode <$> readFile "test/data/issue.json"
   case gitlabEvent of
-    Nothing -> assertFailure "couldn't convert input json (push)"
+    Nothing -> assertFailure "couldn't convert input json (issue)"
     Just event -> do
       putStrLn (textShow event)
       assertBool "author is preserved in plain" ("Plato" `isInfixOf` (event ^. plainBody ))
       case event ^. markupBody of
         Nothing -> assertFailure "no markup"
         Just markup -> assertBool "author is preserved in markup" ("Plato" `isInfixOf` (textShow markup ))
+
+case_conversionForUpdateEvent = do
+  gitlabEvent <- ( convertGitlabEvent <$> ) <$> decode <$> readFile "test/data/check_complete.json"
+  case gitlabEvent of
+    Nothing -> assertFailure "couldn't convert input json (check complete)"
+    Just event -> do
+      putStrLn (textShow event)
+      assertBool "author is preserved in plain" ("doofy" `isInfixOf` (event ^. plainBody ))
+      case event ^. markupBody of
+        Nothing -> assertFailure "no markup"
+        Just markup -> do
+          assertBool "markup contains flag" ("updated" `isInfixOf` (textShow markup))
+          assertBool "author is preserved in markup" ("doofy" `isInfixOf` (textShow markup ))
 
 case_conversionForCommentEvent = do
   gitlabEvent <- ( convertGitlabEvent <$> ) <$> decode <$> readFile "test/data/comment.json"

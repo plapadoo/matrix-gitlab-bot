@@ -7,6 +7,7 @@ module Web.Matrix.Gitlab.API
   , eventRepository
   , eventCommits
   , objectTitle
+  , objectAction
   , objectUrl
   , objectNote
   , eventUserName
@@ -41,6 +42,7 @@ data GitlabObjectAttributes = GitlabObjectAttributes
   , url :: Text
   , note :: Maybe Text
   , state :: Maybe Text
+  , action :: Maybe Text
   } deriving (Generic, Show)
 
 objectTitle :: GitlabObjectAttributes -> Maybe Text
@@ -54,6 +56,9 @@ objectNote = note
 
 objectUrl :: GitlabObjectAttributes -> Text
 objectUrl = url
+
+objectAction :: GitlabObjectAttributes -> Maybe Text
+objectAction = action
 
 data GitlabUser = GitlabUser
   { username :: Text

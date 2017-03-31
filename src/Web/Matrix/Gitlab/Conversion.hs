@@ -22,9 +22,16 @@ import Web.Matrix.Bot.IncomingMessage
 import Web.Matrix.Gitlab.API
        (GitlabEvent, GitlabCommit, eventObjectKind, eventCommits,
         eventUserName, eventUserUserName, objectNote, objectUrl,
-        objectTitle, objectState, eventIssue, issueTitle,
+        objectTitle, objectState,objectAction, eventIssue, issueTitle,
         eventObjectAttributes, eventRepository, commitMessage, commitUrl,
         repositoryName)
+
+actionToText :: Text.Text -> Text.Text
+actionToText t =
+  case t of
+    "open" -> "opened"
+    "update" -> "updated"
+    _ -> "changed"
 
 convertGitlabEvent :: GitlabEvent -> (IncomingMessage Text.Text (Html ()))
 convertGitlabEvent event =
@@ -64,12 +71,12 @@ convertGitlabEvent event =
       let repo = fromJust (eventRepository event)
           userName = fold (eventUserUserName event)
           attributes = fromJust (eventObjectAttributes event)
-          state = fromJust (objectState attributes)
+          action = actionToText (fromJust (objectAction attributes))
           messagePlain =
             formatStrict
               "{} {} issue {} to {}"
               ( userName
-              , state
+              , action
               , surroundQuotes . fromJust . objectTitle $ attributes
               , repositoryName repo)
           issueLink =
@@ -77,8 +84,8 @@ convertGitlabEvent event =
               [href_ (objectUrl attributes)]
               (toHtml . surroundQuotes . fromJust . objectTitle $ attributes)
           messageHtml =
-            strong_ (toHtml userName) <> " " <> toHtml state <> " " <> issueLink <>
-            " to " <>
+            strong_ (toHtml userName) <> " " <> toHtml action <> " " <> issueLink <>
+            " in " <>
             strong_ (toHtml (repositoryName repo))
       in constructIncomingMessage messagePlain (Just messageHtml)
     "note" ->
