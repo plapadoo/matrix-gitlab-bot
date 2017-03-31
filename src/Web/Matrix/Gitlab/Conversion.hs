@@ -30,6 +30,8 @@ actionToText :: Text.Text -> Text.Text
 actionToText t =
   case t of
     "open" -> "opened"
+    "close" -> "closed"
+    "reopen" -> "reopened"
     "update" -> "updated"
     _ -> "changed"
 
