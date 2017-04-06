@@ -5,6 +5,7 @@ module Web.Matrix.Gitlab.API
   , eventObjectKind
   , objectState
   , eventRepository
+  , eventRef
   , eventCommits
   , objectTitle
   , objectAction
@@ -67,6 +68,7 @@ data GitlabUser = GitlabUser
 data GitlabEvent = GitlabEvent
   { object_kind :: Text
   , user :: Maybe GitlabUser
+  , ref :: Maybe Text
   , user_name :: Maybe Text
   , repository :: Maybe GitlabRepository
   , commits :: Maybe [GitlabCommit]
@@ -88,6 +90,9 @@ eventCommits = commits
 
 eventRepository :: GitlabEvent -> Maybe GitlabRepository
 eventRepository = repository
+
+eventRef :: GitlabEvent -> Maybe Text
+eventRef = ref
 
 eventUserName :: GitlabEvent -> Maybe Text
 eventUserName = user_name

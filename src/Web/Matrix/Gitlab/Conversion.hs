@@ -8,7 +8,7 @@ import Control.Monad (mapM_)
 import Data.Foldable (length, fold)
 import Data.Function ((.), ($))
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe(..), fromJust, maybe)
+import Data.Maybe (Maybe(..), fromJust, maybe,fromMaybe)
 import Data.Monoid ((<>), mempty)
 import qualified Data.Text as Text
 import Data.Text.Format (format)
@@ -23,8 +23,9 @@ import Web.Matrix.Gitlab.API
        (GitlabEvent, GitlabCommit, eventObjectKind, eventCommits,
         eventUserName, eventUserUserName, objectNote, objectUrl,
         objectTitle, objectState,objectAction, eventIssue, issueTitle,
-        eventObjectAttributes, eventRepository, commitMessage, commitUrl,
+        eventObjectAttributes, eventRef,eventRepository, commitMessage, commitUrl,
         repositoryName)
+import Data.Tuple(snd)
 
 actionToText :: Text.Text -> Text.Text
 actionToText t =
@@ -35,6 +36,9 @@ actionToText t =
     "update" -> "updated"
     _ -> "changed"
 
+resolveRefBranch :: Text.Text -> Text.Text
+resolveRefBranch = snd . Text.breakOnEnd "/"
+
 convertGitlabEvent :: GitlabEvent -> (IncomingMessage Text.Text (Html ()))
 convertGitlabEvent event =
   case eventObjectKind event of
@@ -42,6 +46,7 @@ convertGitlabEvent event =
       let repo = fromJust (eventRepository event)
           commitCount = maybe "0" textShow (length <$> (eventCommits event))
           userName = fold (eventUserName event)
+          branch = fromMaybe "master" (resolveRefBranch <$> (eventRef event))
           commitHtml :: GitlabCommit -> Html ()
           commitHtml commit =
             li_
@@ -60,12 +65,14 @@ convertGitlabEvent event =
                eventCommits event)
           messagePlain =
             formatStrict
-              "{} pushed {} commit(s) to {}: {}"
-              (userName, commitCount, repositoryName repo, commitsPlain)
+              "{} pushed {} commit(s) to {}/{}: {}"
+              (userName, commitCount, repositoryName repo, branch, commitsPlain)
           messageHtml =
             (strong_ (toHtml userName)) <> " pushed " <> (toHtml commitCount) <>
             " commit(s) to " <>
             (strong_ . toHtml . repositoryName $ repo) <>
+            "/" <>
+            (strong_ . toHtml $ branch) <>
             ": " <>
             commitsHtml
       in constructIncomingMessage messagePlain (Just messageHtml)
