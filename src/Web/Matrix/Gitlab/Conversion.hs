@@ -53,8 +53,8 @@ convertGitlabEvent event =
               "running" -> "🏃 running"
               "failed" -> "⚠ failed"
               x -> toHtml status
-          messagePlain = "🔧 pipeline in project " <> name <> " " <> (strong_ status)
-          messageHtml = "🔧 pipeline in project " <> strong_ (toHtml name) <> " " <> htmlStatus 
+          messagePlain = "🔧 pipeline in project " <> name <> " " <> status
+          messageHtml = "🔧 pipeline in project " <> strong_ (toHtml name) <> " " <> (strong_ htmlStatus) 
       in constructIncomingMessage messagePlain (Just messageHtml)
     "push" ->
       let repo = fromJust (eventRepository event)
