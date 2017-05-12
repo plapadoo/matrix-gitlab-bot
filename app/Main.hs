@@ -1,11 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveFunctor #-}
 
 module Main where
 
-import Control.Applicative (Applicative)
-import Control.Lens ((^.), view)
+import Control.Applicative (Applicative,(<|>),(<*>))
+import Control.Lens ((^.), view,makeLenses)
 import Control.Monad (return, Monad, mapM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (ReaderT, MonadReader, runReaderT)
@@ -14,7 +15,7 @@ import Data.Bool (Bool(True))
 import Data.ByteString.Lazy (toStrict)
 import Data.Either (Either(..))
 import Data.Foldable (and,null)
-import Data.Function (($))
+import Data.Function (($),const,(.))
 import Data.Functor (Functor, (<$>))
 import Data.Maybe (Maybe(..))
 import Data.Monoid ((<>))
@@ -22,7 +23,7 @@ import Data.Text (pack)
 import Data.Text.Encoding (decodeUtf8)
 import Web.Matrix.Bot.API (sendMessage)
 import Web.Matrix.Gitlab.API
-       (GitlabEvent, eventRepository, repositoryName)
+       (GitlabEvent, eventRepository, repositoryName,projectName,eventProject)
 import Web.Matrix.Gitlab.ConfigOptions
        (ConfigOptions, readConfigOptions, coListenPort, coBotUrl,
         coLogFile, coRepoMapping)
@@ -37,15 +38,26 @@ import Plpd.Util (textShow)
 import Prelude ()
 import System.IO (IO)
 import Web.Scotty (scotty, post, status, body)
+import Control.Concurrent.MVar(MVar,newMVar,modifyMVar_)
+
+data MyDynamicState = MyDynamicState {
+    _dynStateConfigOptions :: ConfigOptions
+  , _dynStateLogMVar :: MVar ()
+  }
+
+makeLenses ''MyDynamicState
 
 newtype MyMonad a = MyMonad
-  { runMyMonad :: ReaderT ConfigOptions IO a
-  } deriving (Functor, Applicative, Monad, MonadIO, MonadReader ConfigOptions)
+  { runMyMonad :: ReaderT MyDynamicState IO a
+  } deriving (Functor, Applicative, Monad, MonadIO, MonadReader MyDynamicState)
+
+myDefaultLog inputText logFile mvar = liftIO $ modifyMVar_ mvar $ const (defaultLog logFile inputText)
 
 instance MonadLog MyMonad where
   putLog inputText = do
-    logFile <- view coLogFile
-    defaultLog logFile inputText
+    configFile <- view (dynStateConfigOptions . coLogFile)
+    mvar <- view dynStateLogMVar
+    myDefaultLog inputText configFile mvar
 
 instance MonadHttp MyMonad where
   httpRequest = loggingHttp
@@ -54,7 +66,9 @@ main :: IO ()
 main = do
   options <- readProgramOptions
   configOptions <- readConfigOptions (options ^. poConfigFile)
-  let defLog = defaultLog (configOptions ^. coLogFile)
+  mvar <- newMVar ()
+  let dynState = MyDynamicState configOptions mvar
+      defLog x = myDefaultLog x (configOptions ^. coLogFile) mvar
   scotty (configOptions ^. coListenPort) $
     post "/" $ do
       rm' <- readRepoMapping (configOptions ^. coRepoMapping)
@@ -67,7 +81,7 @@ main = do
           case decode content of
             Nothing -> defLog "couldn't parse json"
             Just decodedJson ->
-              case repositoryName <$> eventRepository decodedJson of
+              case (repositoryName <$> eventRepository decodedJson <|> (projectName <$> eventProject decodedJson)) of
                 Nothing -> defLog "No repository found in JSON"
                 Just repo -> do
                   let incomingMessage = convertGitlabEvent decodedJson
@@ -87,7 +101,7 @@ main = do
                             (mapM
                               (\(Room r) -> sendToRoom r)
                               rooms))
-                        configOptions)
+                        dynState)
                   if and result
                     then status ok200
                     else status internalServerError500

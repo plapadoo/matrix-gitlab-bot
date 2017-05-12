@@ -4,7 +4,7 @@ module Web.Matrix.Gitlab.Conversion
   ( convertGitlabEvent
   ) where
 
-import Control.Monad (mapM_)
+import Control.Monad (mapM_,(>>=))
 import Data.Foldable (length, fold)
 import Data.Function ((.), ($))
 import Data.Functor ((<$>))
@@ -13,7 +13,7 @@ import Data.Monoid ((<>), mempty)
 import qualified Data.Text as Text
 import Data.Text.Format (format)
 import Lucid
-       (Html, ol_, li_, toHtml, strong_, span_, a_, href_, hr_)
+       (Html, ol_, li_, toHtml, em_,strong_, span_, a_, href_, hr_)
 import Plpd.Util (textShow, surroundQuotes, formatStrict)
 import Prelude ()
 import Web.Matrix.Bot.IncomingMessage
@@ -22,7 +22,8 @@ import Web.Matrix.Bot.IncomingMessage
 import Web.Matrix.Gitlab.API
        (GitlabEvent, GitlabCommit, eventObjectKind, eventCommits,
         eventUserName, eventUserUserName, objectNote, objectUrl,
-        objectTitle, objectState,objectAction, eventIssue, issueTitle,
+        eventProject,projectName,
+        objectTitle, objectStatus,objectState,objectAction, eventIssue, issueTitle,
         eventObjectAttributes, eventRef,eventRepository, commitMessage, commitUrl,
         repositoryName)
 import Data.Tuple(snd)
@@ -42,6 +43,19 @@ resolveRefBranch = snd . Text.breakOnEnd "/"
 convertGitlabEvent :: GitlabEvent -> (IncomingMessage Text.Text (Html ()))
 convertGitlabEvent event =
   case eventObjectKind event of
+    "pipeline" ->
+      let name = projectName ( fromJust (eventProject event) )
+          status = fromJust ( eventObjectAttributes event >>= objectStatus )
+          htmlStatus =
+            case status of
+              "success" -> em_ "👍 success"
+              "pending" -> "💤pending"
+              "running" -> "🏃 running"
+              "failed" -> "⚠️ failed"
+              x -> strong_ (toHtml status)
+          messagePlain = "🔧 pipeline in project " <> name <> " " <> status
+          messageHtml = "🔧 pipeline in repository " <> strong_ (toHtml name) <> " " <> htmlStatus 
+      in constructIncomingMessage messagePlain (Just messageHtml)
     "push" ->
       let repo = fromJust (eventRepository event)
           commitCount = maybe "0" textShow (length <$> (eventCommits event))
@@ -65,10 +79,10 @@ convertGitlabEvent event =
                eventCommits event)
           messagePlain =
             formatStrict
-              "{} pushed {} commit(s) to {}/{}: {}"
+              "🔁 {}pushed {} commit(s) to {}/{}: {}"
               (userName, commitCount, repositoryName repo, branch, commitsPlain)
           messageHtml =
-            (strong_ (toHtml userName)) <> " pushed " <> (toHtml commitCount) <>
+            (strong_ (toHtml userName)) <> " 🔁 pushed " <> (toHtml commitCount) <>
             " commit(s) to " <>
             (strong_ . toHtml . repositoryName $ repo) <>
             "/" <>
@@ -83,14 +97,14 @@ convertGitlabEvent event =
           action = actionToText (fromJust (objectAction attributes))
           messagePlain =
             formatStrict
-              "{} {} issue {} to {}"
+              "📋 {} {} issue {} to {}"
               ( userName
               , action
               , surroundQuotes . fromJust . objectTitle $ attributes
               , repositoryName repo)
           issueLink =
             a_
-              [href_ (objectUrl attributes)]
+              [href_ (fromJust (objectUrl attributes))]
               (toHtml . surroundQuotes . fromJust . objectTitle $ attributes)
           messageHtml =
             strong_ (toHtml userName) <> " " <> toHtml action <> " " <> issueLink <>
@@ -104,14 +118,14 @@ convertGitlabEvent event =
           attributes = fromJust (eventObjectAttributes event)
           messagePlain =
             formatStrict
-              "{} commented {} to issue {} in {}"
+              "💬 {} commented {} to issue {} in {}"
               ( userName
               , surroundQuotes . fromJust . objectNote $ attributes
               , surroundQuotes title
               , repositoryName repo)
           issueLink =
             a_
-              [href_ (objectUrl attributes)]
+              [href_ (fromJust (objectUrl attributes))]
               (toHtml . surroundQuotes . fromJust . objectNote $ attributes)
           messageHtml =
             strong_ (toHtml userName) <> " commented " <> issueLink <> " to issue " <> toHtml (surroundQuotes title) <> " in " <> strong_ (toHtml (repositoryName repo))
