@@ -48,7 +48,7 @@ convertGitlabEvent event =
           status = fromJust ( eventObjectAttributes event >>= objectStatus )
           htmlStatus =
             case status of
-              "success" -> _ "👍 success"
+              "success" -> "👍 success"
               "pending" -> "💤 pending"
               "running" -> "🏃 running"
               "failed" -> "⚠ failed"
