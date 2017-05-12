@@ -48,13 +48,13 @@ convertGitlabEvent event =
           status = fromJust ( eventObjectAttributes event >>= objectStatus )
           htmlStatus =
             case status of
-              "success" -> em_ "👍 success"
-              "pending" -> "💤pending"
+              "success" -> _ "👍 success"
+              "pending" -> "💤 pending"
               "running" -> "🏃 running"
-              "failed" -> "⚠️ failed"
-              x -> strong_ (toHtml status)
-          messagePlain = "🔧 pipeline in project " <> name <> " " <> status
-          messageHtml = "🔧 pipeline in repository " <> strong_ (toHtml name) <> " " <> htmlStatus 
+              "failed" -> "⚠ failed"
+              x -> toHtml status
+          messagePlain = "🔧 pipeline in project " <> name <> " " <> (strong_ status)
+          messageHtml = "🔧 pipeline in project " <> strong_ (toHtml name) <> " " <> htmlStatus 
       in constructIncomingMessage messagePlain (Just messageHtml)
     "push" ->
       let repo = fromJust (eventRepository event)
@@ -79,10 +79,10 @@ convertGitlabEvent event =
                eventCommits event)
           messagePlain =
             formatStrict
-              "🔁 {}pushed {} commit(s) to {}/{}: {}"
+              "🔁 {} pushed {} commit(s) to {}/{}: {}"
               (userName, commitCount, repositoryName repo, branch, commitsPlain)
           messageHtml =
-            (strong_ (toHtml userName)) <> " 🔁 pushed " <> (toHtml commitCount) <>
+            "🔁 " <> (strong_ (toHtml userName)) <> " pushed " <> (toHtml commitCount) <>
             " commit(s) to " <>
             (strong_ . toHtml . repositoryName $ repo) <>
             "/" <>
@@ -107,7 +107,7 @@ convertGitlabEvent event =
               [href_ (fromJust (objectUrl attributes))]
               (toHtml . surroundQuotes . fromJust . objectTitle $ attributes)
           messageHtml =
-            strong_ (toHtml userName) <> " " <> toHtml action <> " " <> issueLink <>
+            "📋 " <> strong_ (toHtml userName) <> " " <> toHtml action <> " " <> issueLink <>
             " in " <>
             strong_ (toHtml (repositoryName repo))
       in constructIncomingMessage messagePlain (Just messageHtml)
@@ -128,7 +128,7 @@ convertGitlabEvent event =
               [href_ (fromJust (objectUrl attributes))]
               (toHtml . surroundQuotes . fromJust . objectNote $ attributes)
           messageHtml =
-            strong_ (toHtml userName) <> " commented " <> issueLink <> " to issue " <> toHtml (surroundQuotes title) <> " in " <> strong_ (toHtml (repositoryName repo))
+            "💬 " <> strong_ (toHtml userName) <> " commented " <> issueLink <> " to issue " <> toHtml (surroundQuotes title) <> " in " <> strong_ (toHtml (repositoryName repo))
       in constructIncomingMessage messagePlain (Just messageHtml)
     unknown ->
       constructIncomingMessage ("Unknown gitlab event type " <> unknown) Nothing
