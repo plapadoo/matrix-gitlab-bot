@@ -1,7 +1,7 @@
 name:                matrix-gitlab
 version:             0.1.0.0
--- synopsis:
--- description:
+synopsis:            Process gitlab events and post them to a Matrix channel
+description:         Process gitlab events and post them to a Matrix channel
 homepage:            https://github.com/githubuser/matrix-gitlab#readme
 license:             BSD3
 license-file:        LICENSE
