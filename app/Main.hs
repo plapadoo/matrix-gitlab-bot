@@ -104,4 +104,6 @@ main = do
                         dynState)
                   if and result
                     then status ok200
-                    else status internalServerError500
+                    else do
+                      defLog "Request did not work, returning 500"
+                      status internalServerError500
