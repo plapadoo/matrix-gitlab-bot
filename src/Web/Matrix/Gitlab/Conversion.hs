@@ -23,7 +23,7 @@ import Web.Matrix.Gitlab.API
        (GitlabEvent, GitlabCommit, eventObjectKind, eventCommits,
         eventUserName, eventUserUserName, objectNote, objectUrl,
         eventProject,projectName,
-        objectTitle, objectStatus,objectState,objectAction, eventIssue, issueTitle,
+        objectId,objectTitle, objectStatus,objectState,objectAction, eventIssue, issueTitle,
         eventObjectAttributes, eventRef,eventRepository, commitMessage, commitUrl,
         repositoryName)
 import Data.Tuple(snd)
@@ -46,6 +46,7 @@ convertGitlabEvent event =
     "pipeline" ->
       let name = projectName ( fromJust (eventProject event) )
           status = fromJust ( eventObjectAttributes event >>= objectStatus )
+          pipelineId = fromJust ( eventObjectAttributes event >>= objectId )
           htmlStatus =
             case status of
               "success" -> "👍 success"
@@ -53,8 +54,8 @@ convertGitlabEvent event =
               "running" -> "🏃 running"
               "failed" -> "⚠ failed"
               x -> toHtml status
-          messagePlain = "🔧 pipeline in project " <> name <> " " <> status
-          messageHtml = "🔧 pipeline in project " <> strong_ (toHtml name) <> " " <> (strong_ htmlStatus) 
+          messagePlain = "🔧 pipeline " <> textShow pipelineId <> " in project " <> name <> " " <> status
+          messageHtml = "🔧 pipeline " <> toHtml (textShow pipelineId) <> " in project " <> strong_ (toHtml name) <> " " <> (strong_ htmlStatus) 
       in constructIncomingMessage messagePlain (Just messageHtml)
     "push" ->
       let repo = fromJust (eventRepository event)

@@ -5,6 +5,7 @@ module Web.Matrix.Gitlab.API
   , eventObjectKind
   , objectState
   , objectStatus
+  , objectId
   , eventRepository
   , eventRef
   , eventCommits
@@ -38,6 +39,7 @@ import Web.Matrix.Gitlab.Internal.Commit
 import Web.Matrix.Gitlab.Internal.Project
        (GitlabProject, projectName)
 import Web.Matrix.Gitlab.Internal.Issue (GitlabIssue, issueTitle)
+import Data.Int(Int)
 
 data GitlabRepository = GitlabRepository
   { name :: Text
@@ -46,11 +48,15 @@ data GitlabRepository = GitlabRepository
 data GitlabObjectAttributes = GitlabObjectAttributes
   { title :: Maybe Text
   , url :: Maybe Text
+  , id :: Maybe Int
   , note :: Maybe Text
   , state :: Maybe Text
   , status :: Maybe Text
   , action :: Maybe Text
   } deriving (Generic, Show)
+
+objectId :: GitlabObjectAttributes -> Maybe Int
+objectId = id
 
 objectTitle :: GitlabObjectAttributes -> Maybe Text
 objectTitle = title
