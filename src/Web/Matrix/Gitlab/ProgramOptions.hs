@@ -26,7 +26,7 @@ programOptionsParser =
     OptAppl.strOption
         (OptAppl.long "config-file" <>
          OptAppl.help "Where to put the config file" <>
-         OptAppl.value "/etc/matrix-bot/matrix-gitlab-bot.conf")
+         OptAppl.value "/etc/matrix-bot/matrix-gitlab-bot.dhall")
 
 readProgramOptions
     :: MonadIO m
