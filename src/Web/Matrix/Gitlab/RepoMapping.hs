@@ -1,118 +1,65 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
 
 module Web.Matrix.Gitlab.RepoMapping
   ( RepoMapping
   , readRepoMapping
   , roomsForRepo
-  , readRepoMappingText
-  , RoomEntity(..)
   , Room(..)
-  , Directory(..)
+  , RepoMappings
   , Repo(..)
-  , roomsForEntity
-  , roomToDirs
   , rooms
   ) where
 
-import Control.Applicative ((*>), (<*), (<*>))
-import Control.Monad (return)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import qualified Data.Attoparsec.Text as Atto
-import Data.Bool (Bool, (||), otherwise)
-import Data.Char (Char)
-import Data.Either (Either)
-import Data.Eq ((/=), (==), Eq)
-import Data.Foldable (foldMap, concatMap)
-import Data.Function ((.))
-import Data.Functor ((<$>))
-import Data.List (filter)
-import Data.Map (Map, keys, singleton, toList)
-import Data.Ord (Ord)
-import Data.String (String)
-import Data.Text (Text, isPrefixOf, drop)
-import Data.Text.IO (readFile)
-import Data.Tuple (fst, snd)
-import Prelude (undefined)
-import System.FilePath (FilePath)
-import Text.Show (Show)
+import           Control.Applicative    ((*>), (<*), (<*>))
+import           Control.Monad          (return)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Data.Bool              (Bool, otherwise, (||))
+import           Data.Char              (Char)
+import           Data.Either            (Either)
+import           Data.Eq                (Eq, (/=), (==))
+import           Data.Foldable          (concatMap, foldMap,toList)
+import           Data.Function          ((.))
+import           Data.Functor           ((<$>))
+import           Data.List              (filter)
+import           Data.Ord               (Ord)
+import           Data.String            (String, fromString)
+import qualified Data.Text              as Text
+import           Data.Text.IO           (readFile)
+import           Data.Tuple             (fst, snd)
+import qualified Dhall                  as Dhall
+import           GHC.Generics           (Generic)
+import           Plpd.Dhall             (toString, toText)
+import           Prelude                (undefined)
+import           System.FilePath        (FilePath)
+import           Text.Show              (Show,show)
 
-data Room =
-  Room Text
-  deriving (Ord, Eq, Show)
+data RepoMapping = RepoMapping {
+    room :: Dhall.Text
+  , repo :: Dhall.Text
+  } deriving(Generic,Dhall.Interpret)
 
-data Repo =
-  Repo Text
-  deriving (Ord, Eq, Show)
+newtype Room = Room { roomText :: Text.Text } deriving(Eq)
+newtype Repo = Repo { repoText :: Text.Text } deriving(Eq)
 
-data Directory =
-  Directory Text
-  deriving (Ord, Eq, Show)
+instance Show Room where
+  show (Room a) = Text.unpack a
 
-data RoomEntity
-  = RoomToRepo Repo
-  | RoomToDirectory Directory
-  deriving (Eq, Show)
+instance Show Repo where
+  show (Repo a) = Text.unpack a
 
-type RepoMapping = Map Room [RoomEntity]
+type RepoMappings = Dhall.Vector RepoMapping
 
-rooms :: RepoMapping -> [Room]
-rooms rm = keys rm
+rooms :: RepoMappings -> [Room]
+rooms rm = toList ((Room . toText . room) <$> rm)
 
-repoMappingToList :: RepoMapping -> [(Room, RoomEntity)]
-repoMappingToList rm =
-  [(room, repo) | (room, repos) <- toList rm, repo <- repos]
+repoMappingToList :: RepoMappings -> [(Room, Repo)]
+repoMappingToList rm = toList ((\(RepoMapping room repo) -> (Room (toText room),Repo (toText repo))) <$> rm)
 
-roomsForRepo :: RepoMapping -> Repo -> [Room]
-roomsForRepo rm repo = roomsForEntity rm (RoomToRepo repo)
+roomsForRepo :: RepoMappings -> Repo -> [Room]
+roomsForRepo rm repo = fst <$> (filter ((== repo) . snd) (repoMappingToList rm))
 
-roomsForEntity :: RepoMapping -> RoomEntity -> [Room]
-roomsForEntity rm repo =
-  fst <$> (filter ((== repo) . snd) (repoMappingToList rm))
+inputLifted x = liftIO (Dhall.detailed (Dhall.input Dhall.auto x))
 
-roomToDirs :: RepoMapping -> [(Room, Directory)]
-roomToDirs rm =
-  concatMap
-    (\(room, entity) ->
-       case entity of
-         RoomToDirectory dir -> [(room, dir)]
-         _ -> [])
-    (repoMappingToList rm)
-
-data RepoMappingLine =
-  RepoMappingLine Text
-                  [Text]
-
-repoOrDir text
-  | "@" `isPrefixOf` text = RoomToDirectory (Directory (drop 1 text))
-  | otherwise = RoomToRepo (Repo text)
-
-linesToMapping :: [RepoMappingLine] -> RepoMapping
-linesToMapping =
-  foldMap
-    (\(RepoMappingLine key values) ->
-       singleton (Room key) (repoOrDir <$> values))
-
-isSpace :: Char -> Bool
-isSpace c = c == ' ' || c == '\t'
-
-attoSkipSpace = Atto.skipWhile isSpace
-
-lineParser :: Atto.Parser RepoMappingLine
-lineParser =
-  RepoMappingLine <$>
-  (attoSkipSpace *> (Atto.takeWhile (/= '=') <* Atto.char '=')) <*>
-  ((attoSkipSpace *> Atto.takeWhile (Atto.notInClass ",\n") <* attoSkipSpace) `Atto.sepBy`
-   (Atto.char ','))
-
-fileParser :: Atto.Parser [RepoMappingLine]
-fileParser = lineParser `Atto.sepBy` Atto.char '\n'
-
-readRepoMappingText :: Text -> Either String RepoMapping
-readRepoMappingText t = linesToMapping <$> (Atto.parseOnly fileParser t)
-
-readRepoMapping
-  :: MonadIO m
-  => FilePath -> m (Either String RepoMapping)
-readRepoMapping fileName = do
-  file <- liftIO (readFile fileName)
-  return (linesToMapping <$> (Atto.parseOnly fileParser file))
+readRepoMapping :: MonadIO m => FilePath -> m RepoMappings
+readRepoMapping = inputLifted . fromString

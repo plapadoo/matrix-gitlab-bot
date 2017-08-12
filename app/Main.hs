@@ -1,48 +1,56 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TemplateHaskell            #-}
 
 module Main where
 
-import Control.Applicative (Applicative,(<|>),(<*>))
-import Control.Lens ((^.), view,makeLenses)
-import Control.Monad (return, Monad, mapM)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (ReaderT, MonadReader, runReaderT)
-import Data.Aeson (decode)
-import Data.Bool (Bool(True))
-import Data.ByteString.Lazy (toStrict)
-import Data.Either (Either(..))
-import Data.Foldable (and,null)
-import Data.Function (($),const,(.))
-import Data.Functor (Functor, (<$>))
-import Data.Maybe (Maybe(..))
-import Data.Monoid ((<>))
-import Data.Text (pack)
-import Data.Text.Encoding (decodeUtf8)
-import Web.Matrix.Bot.API (sendMessage)
-import Web.Matrix.Gitlab.API
-       (GitlabEvent, eventRepository, repositoryName,projectName,eventProject)
-import Web.Matrix.Gitlab.ConfigOptions
-       (ConfigOptions, readConfigOptions, coListenPort, coBotUrl,
-        coLogFile, coRepoMapping)
-import Web.Matrix.Gitlab.Conversion (convertGitlabEvent)
-import Web.Matrix.Gitlab.ProgramOptions (readProgramOptions, poConfigFile)
-import Web.Matrix.Gitlab.RepoMapping
-       (readRepoMapping, Repo(..), roomsForRepo, Room(..))
-import Network.HTTP.Types.Status (internalServerError500, ok200)
-import Plpd.Http (MonadHttp(..), loggingHttp)
-import Plpd.MonadLog (MonadLog(..), defaultLog)
-import Plpd.Util (textShow)
-import Prelude ()
-import System.IO (IO)
-import Web.Scotty (scotty, post, status, body)
-import Control.Concurrent.MVar(MVar,newMVar,modifyMVar_)
+import           Control.Applicative              (Applicative, (<*>), (<|>))
+import           Control.Concurrent.MVar          (MVar, modifyMVar_, newMVar)
+import           Control.Exception                (IOException, try)
+import           Control.Lens                     (makeLenses, view, (^.))
+import           Control.Monad                    (Monad, mapM, return)
+import           Control.Monad.IO.Class           (MonadIO, liftIO)
+import           Control.Monad.Reader             (MonadReader, ReaderT,
+                                                   runReaderT)
+import           Data.Aeson                       (decode)
+import           Data.Bool                        (Bool (True))
+import           Data.ByteString.Lazy             (toStrict)
+import           Data.Either                      (Either (..))
+import           Data.Foldable                    (and, null)
+import           Data.Function                    (const, ($), (.))
+import           Data.Functor                     (Functor, (<$>))
+import           Data.Maybe                       (Maybe (..))
+import           Data.Monoid                      ((<>))
+import           Data.Text                        (pack)
+import           Data.Text.Encoding               (decodeUtf8)
+import           Network.HTTP.Types.Status        (internalServerError500,
+                                                   ok200)
+import           Plpd.Http                        (MonadHttp (..), loggingHttp)
+import           Plpd.MonadLog                    (MonadLog (..), defaultLog)
+import           Plpd.Util                        (textShow)
+import           Prelude                          ()
+import           System.IO                        (IO)
+import           Text.Show                        (show)
+import           Web.Matrix.Bot.API               (sendMessage)
+import           Web.Matrix.Gitlab.API            (GitlabEvent, eventProject,
+                                                   eventRepository, projectName,
+                                                   repositoryName)
+import           Web.Matrix.Gitlab.ConfigOptions  (ConfigOptions, coBotUrl,
+                                                   coListenPort, coLogFile,
+                                                   coRepoMapping,
+                                                   readConfigOptions)
+import           Web.Matrix.Gitlab.Conversion     (convertGitlabEvent)
+import           Web.Matrix.Gitlab.ProgramOptions (poConfigFile,
+                                                   readProgramOptions)
+import           Web.Matrix.Gitlab.RepoMapping    (Repo (..), RepoMappings,
+                                                   Room (..), readRepoMapping,
+                                                   roomsForRepo)
+import           Web.Scotty                       (body, post, scotty, status)
 
 data MyDynamicState = MyDynamicState {
     _dynStateConfigOptions :: ConfigOptions
-  , _dynStateLogMVar :: MVar ()
+  , _dynStateLogMVar       :: MVar ()
   }
 
 makeLenses ''MyDynamicState
@@ -71,10 +79,10 @@ main = do
       defLog x = myDefaultLog x (configOptions ^. coLogFile) mvar
   scotty (configOptions ^. coListenPort) $
     post "/" $ do
-      rm' <- readRepoMapping (configOptions ^. coRepoMapping)
+      rm' <- liftIO $ (try (readRepoMapping (configOptions ^. coRepoMapping)) :: IO (Either IOException RepoMappings))
       case rm' of
         Left e ->
-          defaultLog (configOptions ^. coLogFile) $ "error reading repo mapping: " <> (pack e)
+          defaultLog (configOptions ^. coLogFile) $ "error reading repo mapping: " <> textShow e
         Right rm -> do
           content <- body
           defLog ("Got JSON data: " <> (decodeUtf8 (toStrict content)))
