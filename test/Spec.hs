@@ -1,35 +1,27 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
-import Test.Framework (defaultMain)
-import Test.Framework.Providers.HUnit (testCase)
-import Test.Framework.TH (defaultMainGenerator)
-import Test.HUnit(assertFailure,assertBool,assertEqual)
-import Web.Matrix.Gitlab.Conversion(convertGitlabEvent)
-import Web.Matrix.Gitlab.RepoMapping(readRepoMappingText,rooms,Room(..),roomsForEntity,RoomEntity(..),Repo(..))
-import Web.Matrix.Bot.IncomingMessage(plainBody,markupBody)
-import Prelude()
-import System.IO(IO)
-import Data.ByteString.Lazy(readFile)
-import Data.Aeson(decode)
-import Data.Functor((<$>))
-import Control.Monad(return)
-import Data.Maybe(Maybe(..))
-import Data.Text.IO(putStrLn)
-import Data.Text(isInfixOf)
-import Plpd.Util(textShow)
-import Control.Lens((^.))
-import Data.Either(Either(..))
-import Data.Function(($))
-import Data.Monoid((<>))
-
-case_simpleRepoMapping =
-  case readRepoMappingText "room=repo1,repo2" of
-    Left e -> assertFailure $ "error parsing repo mapping: " <> e
-    Right result -> do
-      assertEqual "invalid rooms" [Room "room"] (rooms result)
-      assertEqual "invalid entities" [Room "room"] (roomsForEntity result (RoomToRepo (Repo "repo1" )))
-      assertEqual "invalid entities" [Room "room"] (roomsForEntity result (RoomToRepo (Repo "repo2" )))
+import           Control.Lens                   ((^.))
+import           Control.Monad                  (return)
+import           Data.Aeson                     (decode)
+import           Data.ByteString.Lazy           (readFile)
+import           Data.Either                    (Either (..))
+import           Data.Function                  (($))
+import           Data.Functor                   ((<$>))
+import           Data.Maybe                     (Maybe (..))
+import           Data.Monoid                    ((<>))
+import           Data.Text                      (isInfixOf)
+import           Data.Text.IO                   (putStrLn)
+import           Plpd.Util                      (textShow)
+import           Prelude                        ()
+import           System.IO                      (IO)
+import           Test.Framework                 (defaultMain)
+import           Test.Framework.Providers.HUnit (testCase)
+import           Test.Framework.TH              (defaultMainGenerator)
+import           Test.HUnit                     (assertBool, assertEqual,
+                                                 assertFailure)
+import           Web.Matrix.Bot.IncomingMessage (markupBody, plainBody)
+import           Web.Matrix.Gitlab.Conversion   (convertGitlabEvent)
 
 case_conversionForPushEvent = do
   gitlabEvent <- ( convertGitlabEvent <$> ) <$> decode <$> readFile "test/data/push.json"
