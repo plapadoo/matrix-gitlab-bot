@@ -25,7 +25,7 @@ import           Data.List              (filter)
 import           Data.Ord               (Ord)
 import           Data.String            (String, fromString)
 import qualified Data.Text              as Text
-import           Data.Text.IO           (readFile)
+import           Data.Text.IO           (readFile,putStrLn)
 import           Data.Tuple             (fst, snd)
 import qualified Dhall                  as Dhall
 import           GHC.Generics           (Generic)
@@ -59,7 +59,10 @@ repoMappingToList rm = toList ((\(RepoMapping room repo) -> (Room (toText room),
 roomsForRepo :: RepoMappings -> Repo -> [Room]
 roomsForRepo rm repo = fst <$> (filter ((== repo) . snd) (repoMappingToList rm))
 
-inputLifted x = liftIO (Dhall.detailed (Dhall.input Dhall.auto x))
+inputLifted x = liftIO (Dhall.detailed (Dhall.input Dhall.auto (fromString x)))
 
 readRepoMapping :: MonadIO m => FilePath -> m RepoMappings
-readRepoMapping = inputLifted . fromString
+readRepoMapping fn = do
+  fc <- liftIO (readFile fn)
+  liftIO (putStrLn fc)
+  inputLifted fn
