@@ -63,6 +63,6 @@ inputLifted x = liftIO (Dhall.detailed (Dhall.input Dhall.auto (fromString x)))
 
 readRepoMapping :: MonadIO m => FilePath -> m RepoMappings
 readRepoMapping fn = do
-  fc <- liftIO (readFile fn)
-  liftIO (putStrLn fc)
+  -- fc <- liftIO (readFile fn)
+  -- liftIO (putStrLn fc)
   inputLifted fn
