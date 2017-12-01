@@ -24,8 +24,9 @@ import           Data.Maybe                       (Maybe (..))
 import           Data.Monoid                      ((<>))
 import           Data.Text                        (pack)
 import           Data.Text.Encoding               (decodeUtf8)
-import           Network.HTTP.Types.Status        (internalServerError500,
-                                                   ok200)
+import           Network.HTTP.Types.Status        (badRequest400,
+                                                   internalServerError500,
+                                                   ok200, serviceUnavailable503)
 import           Plpd.Http                        (MonadHttp (..), loggingHttp)
 import           Plpd.MonadLog                    (MonadLog (..), defaultLog)
 import           Plpd.Util                        (textShow)
@@ -80,18 +81,23 @@ main = do
       defLog x = myDefaultLog x (configOptions ^. coLogFile) mvar
   scotty (configOptions ^. coListenPort) $
     post "/" $ do
-      defaultLog (configOptions ^. coLogFile) "got request"
-      status ok200
-      -- rm' <- liftIO $ (try (readRepoMapping (configOptions ^. coRepoMapping)) :: IO (Either IOException RepoMappings))
-      -- case rm' of
-      --   Left e ->
-      --     defaultLog (configOptions ^. coLogFile) $ "error reading repo mapping: " <> textShow e
-      --   Right rm -> do
-      --     content <- body
-      --     defLog ("Got JSON data: " <> (decodeUtf8 (toStrict content)))
-      --     case decode content of
-      --       Nothing -> defLog "couldn't parse json"
-      --       Just decodedJson ->
+      defaultLog (configOptions ^. coLogFile) "got request, processing..."
+      rm' <- liftIO $ (try (readRepoMapping (configOptions ^. coRepoMapping)) :: IO (Either IOException RepoMappings))
+      case rm' of
+        Left e ->
+          defaultLog (configOptions ^. coLogFile) $ "error reading repo mapping: " <> textShow e
+          status serviceUnavailable503
+        Right rm -> do
+          content <- body
+          defLog ("Got JSON data: " <> (decodeUtf8 (toStrict content)))
+          case decode content of
+            Nothing -> do
+              defLog "couldn't parse json"
+              status badRequest400
+            Just decodedJson ->
+              defLog "parsed json"
+              status ok200
+
       --         case (repositoryName <$> eventRepository decodedJson <|> (projectName <$> eventProject decodedJson)) of
       --           Nothing -> defLog "No repository found in JSON"
       --           Just repo -> do
