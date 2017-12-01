@@ -26,7 +26,8 @@ import           Data.Text                        (pack)
 import           Data.Text.Encoding               (decodeUtf8)
 import           Network.HTTP.Types.Status        (badRequest400,
                                                    internalServerError500,
-                                                   ok200, serviceUnavailable503)
+                                                   notImplemented501, ok200,
+                                                   serviceUnavailable503)
 import           Plpd.Http                        (MonadHttp (..), loggingHttp)
 import           Plpd.MonadLog                    (MonadLog (..), defaultLog)
 import           Plpd.Util                        (textShow)
@@ -98,31 +99,31 @@ main = do
               status badRequest400
             Just decodedJson -> do
               defLog "parsed json"
-              status ok200
-
-      --         case (repositoryName <$> eventRepository decodedJson <|> (projectName <$> eventProject decodedJson)) of
-      --           Nothing -> defLog "No repository found in JSON"
-      --           Just repo -> do
-      --             let incomingMessage = convertGitlabEvent decodedJson
-      --                 sendToRoom room =
-      --                   sendMessage
-      --                     (configOptions ^. coBotUrl)
-      --                     room
-      --                     incomingMessage
-      --                 rooms = roomsForRepo rm (Repo repo)
-      --             if null rooms
-      --               then defLog "No rooms to send"
-      --               else defLog $ "Sending to the following rooms: " <> textShow rooms
-      --             result <-
-      --               liftIO
-      --                 (runReaderT
-      --                   (runMyMonad
-      --                       (mapM
-      --                         (\(Room r) -> sendToRoom r)
-      --                         rooms))
-      --                   dynState)
-      --             if and result
-      --               then status ok200
-      --               else do
-      --                 defLog "Request did not work, returning 500"
-      --                 status internalServerError500
+              case repositoryName <$> eventRepository decodedJson <|> (projectName <$> eventProject decodedJson) of
+                Nothing -> do
+                  status notImplemented501
+                  defLog "No repository found in JSON"
+                Just repo -> do
+                  let incomingMessage = convertGitlabEvent decodedJson
+                      sendToRoom room =
+                        sendMessage
+                          (configOptions ^. coBotUrl)
+                          room
+                          incomingMessage
+                      rooms = roomsForRepo rm (Repo repo)
+                  if null rooms
+                    then defLog "No rooms to send"
+                    else defLog $ "Sending to the following rooms: " <> textShow rooms
+                  result <-
+                    liftIO
+                      (runReaderT
+                        (runMyMonad
+                            (mapM
+                              (\(Room r) -> sendToRoom r)
+                              rooms))
+                        dynState)
+                  if and result
+                    then status ok200
+                    else do
+                      defLog "Request did not work, returning 500"
+                      status internalServerError500
