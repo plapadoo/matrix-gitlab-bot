@@ -94,7 +94,7 @@ main = do
             Nothing -> do
               defLog "couldn't parse json"
               status badRequest400
-            Just decodedJson -> do
+            Just (decodedJson :: GitlabEvent) -> do
               defLog "parsed json"
               status ok200
 
