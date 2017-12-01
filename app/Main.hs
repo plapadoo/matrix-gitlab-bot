@@ -90,11 +90,11 @@ main = do
         Right rm -> do
           content <- body
           defLog ("Got JSON data: " <> (decodeUtf8 (toStrict content)))
-          case decode content of
+          case decode content :: Maybe GitlabEvent of
             Nothing -> do
               defLog "couldn't parse json"
               status badRequest400
-            Just (decodedJson :: GitlabEvent) -> do
+            Just decodedJson -> do
               defLog "parsed json"
               status ok200
 
