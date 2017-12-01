@@ -45,7 +45,8 @@ import           Web.Matrix.Gitlab.Conversion     (convertGitlabEvent)
 import           Web.Matrix.Gitlab.ProgramOptions (poConfigFile,
                                                    readProgramOptions)
 import           Web.Matrix.Gitlab.RepoMapping    (Repo (..), RepoMappings,
-                                                   Room (..), readRepoMapping,
+                                                   Room (..),
+                                                   maybeReadRepoMapping,
                                                    roomsForRepo)
 import           Web.Scotty                       (body, post, scotty, status)
 
@@ -82,15 +83,15 @@ main = do
   scotty (configOptions ^. coListenPort) $
     post "/" $ do
       defaultLog (configOptions ^. coLogFile) "got request, processing..."
-      rm' <- liftIO $ (try (readRepoMapping (configOptions ^. coRepoMapping)) :: IO (Either IOException RepoMappings))
+      rm' <- liftIO (maybeReadRepoMapping (configOptions ^. coRepoMapping))
       defaultLog (configOptions ^. coLogFile) "read repo mapping, checking if everything's fine"
       case rm' of
         Left e -> do
-          defaultLog (configOptions ^. coLogFile) $ "error reading repo mapping: " <> textShow e
+          defaultLog (configOptions ^. coLogFile) $ "error reading repo mapping: " <> pack e
           status serviceUnavailable503
         Right rm -> do
           content <- body
-          defLog ("Got JSON data: " <> (decodeUtf8 (toStrict content)))
+          defLog ("Got JSON data: " <> decodeUtf8 (toStrict content))
           case decode content :: Maybe GitlabEvent of
             Nothing -> do
               defLog "couldn't parse json"
