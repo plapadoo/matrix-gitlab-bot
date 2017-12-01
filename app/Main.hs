@@ -83,6 +83,7 @@ main = do
     post "/" $ do
       defaultLog (configOptions ^. coLogFile) "got request, processing..."
       rm' <- liftIO $ (try (readRepoMapping (configOptions ^. coRepoMapping)) :: IO (Either IOException RepoMappings))
+      defaultLog (configOptions ^. coLogFile) "read repo mapping, checking if everything's fine"
       case rm' of
         Left e -> do
           defaultLog (configOptions ^. coLogFile) $ "error reading repo mapping: " <> textShow e
