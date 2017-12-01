@@ -84,7 +84,7 @@ main = do
       defaultLog (configOptions ^. coLogFile) "got request, processing..."
       rm' <- liftIO $ (try (readRepoMapping (configOptions ^. coRepoMapping)) :: IO (Either IOException RepoMappings))
       case rm' of
-        Left e ->
+        Left e -> do
           defaultLog (configOptions ^. coLogFile) $ "error reading repo mapping: " <> textShow e
           status serviceUnavailable503
         Right rm -> do
@@ -94,7 +94,7 @@ main = do
             Nothing -> do
               defLog "couldn't parse json"
               status badRequest400
-            Just decodedJson ->
+            Just decodedJson -> do
               defLog "parsed json"
               status ok200
 
