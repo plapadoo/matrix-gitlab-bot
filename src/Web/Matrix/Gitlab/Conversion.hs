@@ -4,38 +4,46 @@ module Web.Matrix.Gitlab.Conversion
   ( convertGitlabEvent
   ) where
 
-import Control.Monad (mapM_,(>>=))
-import Data.Foldable (length, fold)
-import Data.Function ((.), ($))
-import Data.Functor ((<$>))
-import Data.Maybe (Maybe(..), fromJust, maybe,fromMaybe)
-import Data.Monoid ((<>), mempty)
-import qualified Data.Text as Text
-import Data.Text.Format (format)
-import Lucid
-       (Html, ol_, li_, toHtml, em_,strong_, span_, a_, href_, hr_)
-import Plpd.Util (textShow, surroundQuotes, formatStrict)
-import Prelude ()
-import Web.Matrix.Bot.IncomingMessage
-       (IncomingMessage, constructIncomingMessageLazy,
-        constructIncomingMessage)
-import Web.Matrix.Gitlab.API
-       (GitlabEvent, GitlabCommit, eventObjectKind, eventCommits,
-        eventUserName, eventUserUserName, objectNote, objectUrl,
-        eventProject,projectName,
-        objectId,objectTitle, objectStatus,objectState,objectAction, eventIssue, issueTitle,
-        eventObjectAttributes, eventRef,eventRepository, commitMessage, commitUrl,
-        repositoryName)
-import Data.Tuple(snd)
+import           Control.Monad                  (mapM_, (>>=))
+import           Data.Foldable                  (fold, length)
+import           Data.Function                  (($), (.))
+import           Data.Functor                   ((<$>))
+import           Data.Maybe                     (Maybe (..), fromJust,
+                                                 fromMaybe, maybe)
+import           Data.Monoid                    (mempty, (<>))
+import qualified Data.Text                      as Text
+import           Data.Text.Format               (format)
+import           Data.Tuple                     (snd)
+import           Lucid                          (Html, a_, em_, hr_, href_, li_,
+                                                 ol_, span_, strong_, toHtml)
+import           Plpd.Util                      (formatStrict, surroundQuotes,
+                                                 textShow)
+import           Prelude                        ()
+import           Web.Matrix.Bot.IncomingMessage (IncomingMessage,
+                                                 constructIncomingMessage,
+                                                 constructIncomingMessageLazy)
+import           Web.Matrix.Gitlab.API          (GitlabCommit, GitlabEvent,
+                                                 commitMessage, commitUrl,
+                                                 eventCommits, eventIssue,
+                                                 eventObjectAttributes,
+                                                 eventObjectKind, eventProject,
+                                                 eventRef, eventRepository,
+                                                 eventUserName,
+                                                 eventUserUserName, issueTitle,
+                                                 objectAction, objectId,
+                                                 objectNote, objectState,
+                                                 objectStatus, objectTitle,
+                                                 objectUrl, projectName,
+                                                 repositoryName)
 
 actionToText :: Text.Text -> Text.Text
 actionToText t =
   case t of
-    "open" -> "opened"
-    "close" -> "closed"
+    "open"   -> "opened"
+    "close"  -> "closed"
     "reopen" -> "reopened"
     "update" -> "updated"
-    _ -> "changed"
+    _        -> "changed"
 
 resolveRefBranch :: Text.Text -> Text.Text
 resolveRefBranch = snd . Text.breakOnEnd "/"
@@ -52,10 +60,10 @@ convertGitlabEvent event =
               "success" -> "👍 success"
               "pending" -> "💤 pending"
               "running" -> "🏃 running"
-              "failed" -> "⚠ failed"
-              x -> toHtml status
+              "failed"  -> "⚠ failed"
+              x         -> toHtml status
           messagePlain = "🔧 pipeline " <> textShow pipelineId <> " in project " <> name <> " " <> status
-          messageHtml = "🔧 pipeline " <> toHtml (textShow pipelineId) <> " in project " <> strong_ (toHtml name) <> " " <> (strong_ htmlStatus) 
+          messageHtml = "🔧 pipeline " <> toHtml (textShow pipelineId) <> " in project " <> strong_ (toHtml name) <> " " <> (strong_ htmlStatus)
       in constructIncomingMessage messagePlain (Just messageHtml)
     "push" ->
       let repo = fromJust (eventRepository event)
@@ -98,7 +106,7 @@ convertGitlabEvent event =
           action = actionToText (fromJust (objectAction attributes))
           messagePlain =
             formatStrict
-              "📋 {} {} issue {} to {}"
+              "📋 {} {} issue {} in {}"
               ( userName
               , action
               , surroundQuotes . fromJust . objectTitle $ attributes
