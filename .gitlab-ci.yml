@@ -8,7 +8,7 @@ deploy:
   only:
     - master
   script:
-    - imagefile=$(nix-build dockerfile.nix)
+    - imagefile=$(nix-build dockerimage.nix)
     - sudo docker rmi -f matrix-gitlab-bot:latest || true
     - sudo docker load < $imagefile
     - sudo docker tag matrix-gitlab-bot:latest $HOST_REGISTRY/matrix-gitlab-bot:latest
