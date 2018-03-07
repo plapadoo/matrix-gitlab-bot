@@ -20,6 +20,10 @@ library
                      , Web.Matrix.Gitlab.Conversion
                      , Web.Matrix.Gitlab.RepoMapping
                      , Web.Matrix.Gitlab.API
+                     , Plpd.Util
+                     , Plpd.Dhall
+                     , Plpd.Http
+                     , Plpd.MonadLog
   other-modules:       Web.Matrix.Gitlab.Internal.Commit
                      , Web.Matrix.Gitlab.Internal.Issue
                      , Web.Matrix.Gitlab.Internal.Project
@@ -29,8 +33,14 @@ library
                      , lens
                      , lucid
                      , text-format
+                     , cryptonite
+                     , bytestring
+                     , time
+                     , iso8601-time
+                     , uuid
+                     , wreq
+                     , random
                      , containers
-                     , plpd-utils
                      , filepath
                      , aeson
                      , text
@@ -48,10 +58,10 @@ executable matrix-gitlab-exe
   default-extensions: OverloadedStrings NoImplicitPrelude
   build-depends:       base >= 4.7 && < 5
                      , lens
-                     , plpd-utils
                      , http-types
                      , mtl
                      , aeson
+                     , lucid
                      , text
                      , bytestring
                      , matrix-gitlab
@@ -73,7 +83,6 @@ test-suite matrix-gitlab-test
                      , test-framework-quickcheck2
                      , quickcheck-instances
                      , text
-                     , plpd-utils
                      , QuickCheck
                      , aeson
                      , bytestring

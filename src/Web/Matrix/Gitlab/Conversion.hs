@@ -2,39 +2,32 @@
 
 module Web.Matrix.Gitlab.Conversion
   ( convertGitlabEvent
+  , IncomingMessage(..)
   ) where
 
-import           Control.Monad                  (mapM_, (>>=))
-import           Data.Foldable                  (fold, length)
-import           Data.Function                  (($), (.))
-import           Data.Functor                   ((<$>))
-import           Data.Maybe                     (Maybe (..), fromJust,
-                                                 fromMaybe, maybe)
-import           Data.Monoid                    (mempty, (<>))
-import qualified Data.Text                      as Text
-import           Data.Text.Format               (format)
-import           Data.Tuple                     (snd)
-import           Lucid                          (Html, a_, em_, hr_, href_, li_,
-                                                 ol_, span_, strong_, toHtml)
-import           Plpd.Util                      (formatStrict, surroundQuotes,
-                                                 textShow)
-import           Prelude                        ()
-import           Web.Matrix.Bot.IncomingMessage (IncomingMessage,
-                                                 constructIncomingMessage,
-                                                 constructIncomingMessageLazy)
-import           Web.Matrix.Gitlab.API          (GitlabCommit, GitlabEvent,
-                                                 commitMessage, commitUrl,
-                                                 eventCommits, eventIssue,
-                                                 eventObjectAttributes,
-                                                 eventObjectKind, eventProject,
-                                                 eventRef, eventRepository,
-                                                 eventUserName,
-                                                 eventUserUserName, issueTitle,
-                                                 objectAction, objectId,
-                                                 objectNote, objectState,
-                                                 objectStatus, objectTitle,
-                                                 objectUrl, projectName,
-                                                 repositoryName)
+import           Control.Monad         (mapM_, (>>=))
+import           Data.Foldable         (fold, length)
+import           Data.Function         (($), (.))
+import           Data.Functor          ((<$>))
+import           Data.Maybe            (Maybe (..), fromJust, fromMaybe, maybe)
+import           Data.Monoid           (mempty, (<>))
+import qualified Data.Text             as Text
+import           Data.Text.Format      (format)
+import           Data.Tuple            (snd)
+import           Lucid                 (Html, a_, em_, hr_, href_, li_, ol_,
+                                        span_, strong_, toHtml)
+import           Plpd.Util             (formatStrict, surroundQuotes, textShow)
+import           Prelude               ()
+import           Text.Show             (Show)
+import           Web.Matrix.Gitlab.API (GitlabCommit, GitlabEvent,
+                                        commitMessage, commitUrl, eventCommits,
+                                        eventIssue, eventObjectAttributes,
+                                        eventObjectKind, eventProject, eventRef,
+                                        eventRepository, eventUserName,
+                                        eventUserUserName, issueTitle,
+                                        objectAction, objectId, objectNote,
+                                        objectState, objectStatus, objectTitle,
+                                        objectUrl, projectName, repositoryName)
 
 actionToText :: Text.Text -> Text.Text
 actionToText t =
@@ -48,7 +41,10 @@ actionToText t =
 resolveRefBranch :: Text.Text -> Text.Text
 resolveRefBranch = snd . Text.breakOnEnd "/"
 
-convertGitlabEvent :: GitlabEvent -> (IncomingMessage Text.Text (Html ()))
+data IncomingMessage = IncomingMessage Text.Text (Maybe (Html ()))
+                     deriving(Show)
+
+convertGitlabEvent :: GitlabEvent -> IncomingMessage
 convertGitlabEvent event =
   case eventObjectKind event of
     "pipeline" ->
@@ -63,13 +59,13 @@ convertGitlabEvent event =
               "failed"  -> "⚠ failed"
               x         -> toHtml status
           messagePlain = "🔧 pipeline " <> textShow pipelineId <> " in project " <> name <> " " <> status
-          messageHtml = "🔧 pipeline " <> toHtml (textShow pipelineId) <> " in project " <> strong_ (toHtml name) <> " " <> (strong_ htmlStatus)
-      in constructIncomingMessage messagePlain (Just messageHtml)
+          messageHtml = "🔧 pipeline " <> toHtml (textShow pipelineId) <> " in project " <> strong_ (toHtml name) <> " " <> strong_ htmlStatus
+      in IncomingMessage messagePlain (Just messageHtml)
     "push" ->
       let repo = fromJust (eventRepository event)
-          commitCount = maybe "0" textShow (length <$> (eventCommits event))
+          commitCount = maybe "0" textShow (length <$> eventCommits event)
           userName = fold (eventUserName event)
-          branch = fromMaybe "master" (resolveRefBranch <$> (eventRef event))
+          branch = maybe "master" resolveRefBranch (eventRef event)
           commitHtml :: GitlabCommit -> Html ()
           commitHtml commit =
             li_
@@ -98,7 +94,7 @@ convertGitlabEvent event =
             (strong_ . toHtml $ branch) <>
             ": " <>
             commitsHtml
-      in constructIncomingMessage messagePlain (Just messageHtml)
+      in IncomingMessage messagePlain (Just messageHtml)
     "issue" ->
       let repo = fromJust (eventRepository event)
           userName = fold (eventUserUserName event)
@@ -119,11 +115,11 @@ convertGitlabEvent event =
             "📋 " <> strong_ (toHtml userName) <> " " <> toHtml action <> " " <> issueLink <>
             " in " <>
             strong_ (toHtml (repositoryName repo))
-      in constructIncomingMessage messagePlain (Just messageHtml)
+      in IncomingMessage messagePlain (Just messageHtml)
     "note" ->
       let repo = fromJust (eventRepository event)
           userName = fold (eventUserUserName event)
-          title = fromJust (issueTitle <$> (eventIssue event))
+          title = fromJust (issueTitle <$> eventIssue event)
           attributes = fromJust (eventObjectAttributes event)
           messagePlain =
             formatStrict
@@ -138,6 +134,6 @@ convertGitlabEvent event =
               (toHtml . surroundQuotes . fromJust . objectNote $ attributes)
           messageHtml =
             "💬 " <> strong_ (toHtml userName) <> " commented " <> issueLink <> " to issue " <> toHtml (surroundQuotes title) <> " in " <> strong_ (toHtml (repositoryName repo))
-      in constructIncomingMessage messagePlain (Just messageHtml)
+      in IncomingMessage messagePlain (Just messageHtml)
     unknown ->
-      constructIncomingMessage ("Unknown gitlab event type " <> unknown) Nothing
+      IncomingMessage ("Unknown gitlab event type " <> unknown) Nothing

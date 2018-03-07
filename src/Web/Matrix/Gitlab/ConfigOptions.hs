@@ -4,7 +4,6 @@
 module Web.Matrix.Gitlab.ConfigOptions
   ( ConfigOptions(..)
   , readConfigOptions
-  , coLogFile
   , coListenPort
   , coBotUrl
   , coRepoMapping
@@ -30,8 +29,7 @@ import           System.FilePath        (FilePath)
 import           System.IO              (IO)
 
 data ConfigOptions = ConfigOptions
-  { logFile     :: Dhall.Text
-  , listenPort  :: Dhall.Natural
+  { listenPort  :: Dhall.Natural
   , botUrl      :: Dhall.Text
   , repoMapping :: Dhall.Text
   } deriving(Generic,Dhall.Interpret)
@@ -44,9 +42,6 @@ toText = toStrict . toLazyText . build
 
 toString :: Dhall.Text -> String
 toString = Text.unpack . toText
-
-coLogFile :: Getter ConfigOptions FilePath
-coLogFile = to (toString . logFile)
 
 coListenPort :: Getter ConfigOptions Int
 coListenPort = to (fromIntegral . listenPort)

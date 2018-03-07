@@ -20,17 +20,17 @@ import           Test.Framework.Providers.HUnit (testCase)
 import           Test.Framework.TH              (defaultMainGenerator)
 import           Test.HUnit                     (assertBool, assertEqual,
                                                  assertFailure)
-import           Web.Matrix.Bot.IncomingMessage (markupBody, plainBody)
-import           Web.Matrix.Gitlab.Conversion   (convertGitlabEvent)
+import           Web.Matrix.Gitlab.Conversion   (IncomingMessage (..),
+                                                 convertGitlabEvent)
 
 case_conversionForPushEvent = do
   gitlabEvent <- ( convertGitlabEvent <$> ) <$> decode <$> readFile "test/data/push.json"
   case gitlabEvent of
     Nothing -> assertFailure "couldn't convert input json (push)"
-    Just event -> do
+    Just event@(IncomingMessage plainBody markup) -> do
       putStrLn (textShow event)
-      assertBool "author is preserved in plain" ("John Smith" `isInfixOf` (event ^. plainBody ))
-      case event ^. markupBody of
+      assertBool "author is preserved in plain" ("John Smith" `isInfixOf` plainBody)
+      case markup of
         Nothing -> assertFailure "no markup"
         Just markup -> assertBool "author is preserved in markup" ("John Smith" `isInfixOf` (textShow markup ))
 
@@ -38,10 +38,10 @@ case_conversionForIssueEvent = do
   gitlabEvent <- ( convertGitlabEvent <$> ) <$> decode <$> readFile "test/data/issue.json"
   case gitlabEvent of
     Nothing -> assertFailure "couldn't convert input json (issue)"
-    Just event -> do
+    Just event@(IncomingMessage plainBody markup) -> do
       putStrLn (textShow event)
-      assertBool "author is preserved in plain" ("Plato" `isInfixOf` (event ^. plainBody ))
-      case event ^. markupBody of
+      assertBool "author is preserved in plain" ("Plato" `isInfixOf` plainBody)
+      case markup of
         Nothing -> assertFailure "no markup"
         Just markup -> assertBool "author is preserved in markup" ("Plato" `isInfixOf` (textShow markup ))
 
@@ -49,10 +49,10 @@ case_conversionForUpdateEvent = do
   gitlabEvent <- ( convertGitlabEvent <$> ) <$> decode <$> readFile "test/data/check_complete.json"
   case gitlabEvent of
     Nothing -> assertFailure "couldn't convert input json (check complete)"
-    Just event -> do
+    Just event@(IncomingMessage plainBody markup) -> do
       putStrLn (textShow event)
-      assertBool "author is preserved in plain" ("doofy" `isInfixOf` (event ^. plainBody ))
-      case event ^. markupBody of
+      assertBool "author is preserved in plain" ("doofy" `isInfixOf` plainBody)
+      case markup of
         Nothing -> assertFailure "no markup"
         Just markup -> do
           assertBool "markup contains flag" ("updated" `isInfixOf` (textShow markup))
@@ -62,11 +62,11 @@ case_conversionForCommentEvent = do
   gitlabEvent <- ( convertGitlabEvent <$> ) <$> decode <$> readFile "test/data/comment.json"
   case gitlabEvent of
     Nothing -> assertFailure "couldn't convert input json (push)"
-    Just event -> do
+    Just event@(IncomingMessage plainBody markup) -> do
       putStrLn (textShow event)
-      assertBool "author is preserved in plain" ("Plato" `isInfixOf` (event ^. plainBody ))
-      assertBool "commented is contained plain" ("commented" `isInfixOf` (event ^. plainBody ))
-      case event ^. markupBody of
+      assertBool "author is preserved in plain" ("Plato" `isInfixOf` plainBody)
+      assertBool "commented is contained plain" ("commented" `isInfixOf` plainBody)
+      case markup of
         Nothing -> assertFailure "no markup"
         Just markup -> assertBool "commented is preserved in markup" ("commented" `isInfixOf` (textShow markup))
 
