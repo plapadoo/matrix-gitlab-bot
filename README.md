@@ -16,7 +16,7 @@ The easiest way to install the bot (or just try it out) is via Docker. Just pull
 
     docker run --rm -v ./docs:/etc/matrix-bot:ro -p 1338:1338 plapadoo/matrix-gitlab-bot
 
-This will pull the official image from [Docker Hub](https://hub.docker.com/r/plapadoo/matrix-gitlab-bot/) and start the container, thus starting the bot. The bot needs to know where to find your matrix-bot. Also, there’s a file that contains pairs of “GitLab repository name” and “matrix.org room to notify”. Both the bot URL and the “repomapping” file are configured in the matrix-gitlab-bot.dhall file. The repository contains a sample config file in the `docs/` directory.
+This will pull the official image from [Docker Hub](https://hub.docker.com/r/plapadoo/matrix-gitlab-bot/) and start the container, thus starting the bot. This will fail unless you fill the configuration directory with some sensible configuration files. The bot needs to know where to find your matrix-bot. Also, there’s a file that contains pairs of “GitLab repository name” and “matrix.org room to notify”. Both the bot URL and the “repomapping” file are configured in the matrix-gitlab-bot.dhall file. The repository contains a sample config file in the `docs/` directory.
 
 ### Manually
 
