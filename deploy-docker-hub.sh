@@ -2,7 +2,9 @@
 
 set -ue
 
+REPO_NAME=$(basename "$TRAVIS_REPO_SLUG")
+
 docker load < result
-docker tag matrix-gitlab-bot:latest plapadoo/matrix-gitlab-bot:latest
+docker tag "$REPO_NAME:latest" "$TRAVIS_REPO_SLUG:latest"
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-docker push plapadoo/matrix-gitlab-bot:latest
+docker push "$TRAVIS_REPO_SLUG:latest"
