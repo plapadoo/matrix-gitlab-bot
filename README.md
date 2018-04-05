@@ -56,6 +56,8 @@ In the resulting screen, on the very top, there’s a section on “Webhooks”.
 
 ![Integrations](./docs/webhooks.png)
 
+Also, for gitlab versions greater than 10.5.6, you have to enable the checkbox “Allow requests to the local network from hooks and services” in the admin settings, see [this bug reqport](https://gitlab.com/gitlab-org/omnibus-gitlab/issues/3307#note_64245578) for more information.
+
 Next, you have to edit your `matrix-bot-repomapping.dhall` and add a new section like this:
 
     {
